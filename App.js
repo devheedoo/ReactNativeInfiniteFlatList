@@ -19,9 +19,7 @@ class App extends Component {
     super(props);
     this.state = {
       loading: false,
-      data: [
-        { name: { first: 'Choco', last: 'Kim' }, email: 'choco@wavetogether.com' },
-      ],
+      data: [],
       page: 1,
       seed: 1,
       error: null,
@@ -32,24 +30,35 @@ class App extends Component {
   componentDidMount() {
     this.makeRemoteRequest();
   }
-  
+
   makeRemoteRequest = () => {
     const { page, seed } = this.state;
-    const url = 'https://randomuser.me/api/?seed=${seed}&page=${page}&results=20';
+    const url = `https://randomuser.me/api/?seed=${seed}&page=${page}&results=20`;
     this.setState({ loading: true });
-    fetch(url)
-      .then(res => res.json())
-      .then(res => {
-        this.setState({
-          data: res.results || [],
-          error: res.error || null,
-          loading: false,
-          refreshing: false,
+    // setTimeout(() => {
+      fetch(url)
+        .then(res => res.json())
+        .then(res => {
+          if (this.state.refreshing) {
+            this.setState({
+              data: res.results,
+              error: res.error || null,
+              loading: false,
+              refreshing: false,
+            });
+          } else {
+            this.setState({
+              data: [...this.state.data, ...res.results],
+              error: res.error || null,
+              loading: false,
+              refreshing: false,
+            });
+          }
+        })
+        .catch(error => {
+          this.setState({ error, loading: false, refreshing: false });
         });
-      })
-      .catch(error => {
-        this.setState({ error, loading: false, refreshing: false });
-      });
+    // }, 1500);
   }
 
   handleRefresh = () => {
@@ -62,7 +71,16 @@ class App extends Component {
         this.makeRemoteRequest();
       }
     );
+  };
 
+  handleLoadMore = () => {
+    this.setState(
+      {
+        page: this.state.page + 1,
+      }, () => {
+        this.makeRemoteRequest();
+      }
+    );
   };
 
   render() {
@@ -84,6 +102,8 @@ class App extends Component {
           keyExtractor={item => item.email}
           refreshing={this.state.refreshing}
           onRefresh={this.handleRefresh}
+          onEndReached={this.handleLoadMore}
+          onEndReachedThreshold={0}
         />
     );
   }
@@ -108,6 +128,5 @@ const styles = StyleSheet.create({
     fontSize: 32,
   },
 });
-
 
 export default App;
