@@ -29,6 +29,10 @@ class App extends Component {
     }
   }
 
+  componentDidMount() {
+    this.makeRemoteRequest();
+  }
+  
   makeRemoteRequest = () => {
     const { page, seed } = this.state;
     const url = 'https://randomuser.me/api/?seed=${seed}&page=${page}&results=20';
@@ -37,20 +41,29 @@ class App extends Component {
       .then(res => res.json())
       .then(res => {
         this.setState({
-          data: res.results,
+          data: res.results || [],
           error: res.error || null,
           loading: false,
           refreshing: false,
         });
       })
       .catch(error => {
-        this.setState({ error, loading: false });
+        this.setState({ error, loading: false, refreshing: false });
       });
   }
 
-  componentDidMount() {
-    this.makeRemoteRequest();
-  }
+  handleRefresh = () => {
+    this.setState(
+      {
+        page: 1,
+        refreshing: true,
+        seed: this.state.seed + 1,
+      }, () => {
+        this.makeRemoteRequest();
+      }
+    );
+
+  };
 
   render() {
     return (
@@ -69,6 +82,8 @@ class App extends Component {
             return <View style={styles.side}><Text style={[styles.center, styles.title]}>List Footer Component</Text></View>
           }}
           keyExtractor={item => item.email}
+          refreshing={this.state.refreshing}
+          onRefresh={this.handleRefresh}
         />
     );
   }
